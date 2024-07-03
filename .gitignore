@@ -1,0 +1,25 @@
+models/
+
+# Ignore compiled Python files
+*.pyc
+
+# Ignore Python virtual environment
+venv/
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore Jupyter Notebook kernel metadata
+**/*.ipynb.meta
+
+# Ignore Jupyter Notebook output files
+**/*.ipynb_output/
+
+# Ignore Jupyter Notebook execution logs
+**/*.ipynb_logs/
+
+# Ignore Jupyter Notebook temporary files
+**/*.ipynb_temp/
+
+# Ignore Jupyter Notebook backup files
+**/*.ipynb_bak/
