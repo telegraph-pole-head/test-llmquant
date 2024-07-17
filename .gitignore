@@ -1,5 +1,9 @@
 models/
 
+wandb/
+
+log/
+
 # Ignore compiled Python files
 *.pyc
 
