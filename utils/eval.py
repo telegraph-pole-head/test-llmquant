@@ -18,6 +18,7 @@ def eval(
     tensor_parallel: bool = True,
     infer_dtye: str = "auto",
     gpu_memory_utilization: float = 0.7,
+    max_model_len: int = None,
     enforce_eager: bool = False,
     batch_size="auto",
     tasks: str = "wikitext",
@@ -25,6 +26,8 @@ def eval(
     use_wandb: bool = True,
     del_logs: bool = False,
     device: str = None,
+    quantization: str = None,
+    kv_cache_dtype: str = None,
 ):
     """Evaluate the model on the given tasks and log the results to wandb.
 
@@ -34,6 +37,7 @@ def eval(
         tensor_parallel (bool, optional):  . Defaults to True.
         infer_dtye (str, optional):  . Defaults to "auto".
         gpu_memory_utilization (float, optional):  . Defaults to 0.7.
+        max_model_len (int, optional):  . Defaults to None.
         enforce_eager (bool, optional): If u want to get the lowest mem overhead(but longer latency), or facing OOM, u can set it to True. Defaults to False.
         batch_size (str, optional):  . Defaults to "auto".
         tasks (str, optional):  . Defaults to "wikitext".
@@ -44,6 +48,9 @@ def eval(
 
     str_tps = "tensor_parallel_size=2," if tensor_parallel else ""
     gpu_num = 2 if tensor_parallel else 1
+    str_q = f"quantization={quantization}," if quantization else ""
+    str_seq_len = f"max_model_len={max_model_len}," if max_model_len else ""
+    str_kv = f"kv_cache_dtype={kv_cache_dtype}," if kv_cache_dtype else ""
 
     # device = device if device else "cuda:0"
     # str_device = "" if tensor_parallel else f"device={device},"
@@ -54,7 +61,10 @@ def eval(
         + f"gpu_memory_utilization={gpu_memory_utilization},"
         + f"batch_size={batch_size},"
         + f"enforce_eager={enforce_eager},"
+        + str_seq_len
         + str_tps
+        + str_q
+        + str_kv
         # + str_device
     )
 
@@ -81,9 +91,12 @@ def eval(
         with open(f"log/{model_name}_on{gpu_num}.log", "w+") as f:
             f.write(log_out)
 
-    # Log results to wandb
-    if use_wandb and wandb.login():
-        wandb.init(
+    if not (use_wandb and wandb.login()):
+        return results
+    else:
+        # Log results to wandb
+        run = wandb.init(
+            name=f"{model_name}_on{gpu_num}_eval_of_{tasks}",
             project="llm_quant_tests",
             job_type="eval",
             config={  # hyperparameters you want to track
@@ -108,13 +121,13 @@ def eval(
         wandb_logger.log_eval_result()
         if log_samples:
             wandb_logger.log_eval_samples(results["samples"])
+        run.finish()
         if del_logs:
             # search for the log files(wandb/ dir) and delete it
             for path in pathlib.Path("..").rglob("wandb"):
                 if os.path.isdir(path):
                     os.system(f"rm -r {path}")
-
-        return results
+    return results
 
 
 def parse_log_vllm(log_content):
