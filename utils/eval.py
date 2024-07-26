@@ -16,7 +16,7 @@ def eval(
     platform: str = "vllm",
     model_name: str = "Llama-2-7b",
     tensor_parallel: bool = True,
-    infer_dtye: str = "auto",
+    infer_dtye="auto",
     gpu_memory_utilization: float = 0.7,
     max_model_len: int = None,
     enforce_eager: bool = False,
