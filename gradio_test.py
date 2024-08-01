@@ -1,6 +1,7 @@
 import argparse
 
 import gradio as gr
+import requests
 from openai import OpenAI
 
 # Argument parser setup
@@ -11,7 +12,7 @@ parser.add_argument(
     "--model-url", type=str, default="http://localhost:8000/v1", help="Model URL"
 )
 parser.add_argument(
-    "-m", "--model", type=str, required=True, help="Model name for the chatbot"
+    "-m", "--model", type=str, default=None, help="Model name for the chatbot"
 )
 parser.add_argument(
     "--temp", type=float, default=0.8, help="Temperature for text generation"
@@ -35,6 +36,19 @@ client = OpenAI(
     base_url=openai_api_base,
 )
 
+def get_first_model(url) -> str:
+    response = requests.get(f"{url}/models")
+    if response.status_code == 200:
+        models = response.json().get("data", [])
+        if models:
+            model_name = models[0]["id"]
+            return model_name
+        else:
+            raise ValueError("No models found at the specified model URL.")
+    else:
+        raise ValueError(f"Failed to fetch models from {args.model_url}: {response.text}")
+
+    
 
 def predict(message, history):
     # Convert chat history to OpenAI format
@@ -48,7 +62,7 @@ def predict(message, history):
 
     # Create a chat completion request and send it to the API server
     stream = client.chat.completions.create(
-        model=args.model,  # Model name to use
+        model=args.model if args.model else get_first_model(args.model_url),  # Model name to use, default to the first model
         messages=history_openai_format,  # Chat history
         temperature=args.temp,  # Temperature for text generation
         stream=True,  # Stream response
